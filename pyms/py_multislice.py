@@ -51,7 +51,7 @@ def thickness_to_slices(
         # Work out how many slice of the structure is closest to the desired
         # output thicknesses
         m = len(subslices)
-        nslices = (t // slice_thickness).astype(np.int) * m
+        nslices = (t // slice_thickness).astype(np.int32) * m
         from scipy.spatial.distance import cdist
 
         # Work out which subslices of the structure
@@ -64,7 +64,7 @@ def thickness_to_slices(
         z = [0] + (nslices + np.asarray([i for i in np.argmin(dist, axis=1)])).tolist()
         return [np.arange(z[i], z[i + 1]) for i in range(len(z) - 1)]
     else:
-        return np.ceil(t / slice_thickness).astype(np.int)
+        return np.ceil(t / slice_thickness).astype(np.int32)
 
 
 def make_propagators(
@@ -114,7 +114,7 @@ def make_propagators(
     app = np.hypot(*gridmax)
 
     # Intitialize array
-    prop = np.zeros((len(subslices), *gridshape), dtype=np.complex)
+    prop = np.zeros((len(subslices), *gridshape), dtype=complex)
     for islice, s_ in enumerate(subslices):
         if islice == 0:
             deltaz = s_ * gridsize[2]
@@ -447,7 +447,7 @@ def nyquist_sampling(rsize=None, resolution_limit=None, eV=None, alpha=None):
     if rsize is None:
         return step_size
     else:
-        return np.ceil(rsize / step_size).astype(np.int)
+        return np.ceil(rsize / step_size).astype(np.int32)
 
 
 def generate_STEM_raster(
@@ -552,7 +552,7 @@ def workout_4DSTEM_datacube_DP_size(FourD_STEM, rsize, gridshape):
 
             #
             diff_pat_crop = np.round(np.asarray(Ksize) * np.asarray(rsize[:2])).astype(
-                np.int
+                np.int32
             )
 
             # Define resampling function to crop and interpolate
@@ -709,7 +709,7 @@ def generate_probe_spread_plot(
     crossection = np.zeros((maxslices, gridshape[0]))
 
     # Array must be shifted to center probe position
-    shift = (pos * np.asarray(gridshape)).astype(np.int)
+    shift = (pos * np.asarray(gridshape)).astype(np.int32)
 
     for i in range(maxslices):
         probe = multislice(
@@ -966,7 +966,7 @@ def STEM(
 
         # Make shifted probes
         scan_index = np.arange(
-            i * batch_size, min((i + 1) * batch_size, nscantot), dtype=np.int
+            i * batch_size, min((i + 1) * batch_size, nscantot), dtype=np.int32
         )
 
         # The shift operator array array will be of size batch_size x Y x X
@@ -1173,7 +1173,7 @@ class scattering_matrix:
         q = q_space_array(gridshape, rsize)
         inside_aperture = np.less_equal(q[0] ** 2 + q[1] ** 2, self.alpha_ ** 2)
         mody, modx = [
-            np.mod(np.fft.fftfreq(x, 1 / x).astype(np.int), p) == 0
+            np.mod(np.fft.fftfreq(x, 1 / x).astype(np.int32), p) == 0
             for x, p in zip(gridshape, self.PRISM_factor)
         ]
         self.beams = np.nonzero(
@@ -1414,7 +1414,7 @@ class scattering_matrix:
                 batch_size, *self.gridshape, 2, dtype=self.dtype, device=self.device
             )
             beams = np.arange(
-                i * batch_size, min((i + 1) * batch_size, self.nbeams), dtype=np.int
+                i * batch_size, min((i + 1) * batch_size, self.nbeams), dtype=np.int32
             )
 
             if self.Fourier_space_output:

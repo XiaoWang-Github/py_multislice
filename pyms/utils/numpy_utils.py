@@ -142,7 +142,7 @@ def Fourier_interpolation_masks(npiyin, npixin, npiyout, npixout):
     """Calculate a mask of array entries to be included in Fourier interpolation."""
     # Construct input and output fft grids
     qyin, qxin, qyout, qxout = [
-        (np.fft.fftfreq(x, 1 / x)).astype(np.int)
+        (np.fft.fftfreq(x, 1 / x)).astype(np.int32)
         for x in [npiyin, npixin, npiyout, npixout]
     ]
 
@@ -274,7 +274,7 @@ def fourier_interpolate_2d(
     from numpy.fft import fft2
 
     # Make input complex
-    aout = np.zeros(np.shape(ain)[:-2] + tuple(shapeout), dtype=np.complex)
+    aout = np.zeros(np.shape(ain)[:-2] + tuple(shapeout), dtype=complex)
 
     # Get input dimensions
     npiyin, npixin = np.shape(ain)[-2:]
@@ -284,9 +284,9 @@ def fourier_interpolate_2d(
     maskin, maskout = Fourier_interpolation_masks(npiyin, npixin, npiyout, npixout)
 
     if qspace_in:
-        a = np.asarray(ain, dtype=np.complex)
+        a = np.asarray(ain, dtype=complex)
     else:
-        a = fft2(np.asarray(ain, dtype=np.complex))
+        a = fft2(np.asarray(ain, dtype=complex))
 
     # Now transfer over Fourier coefficients from input to output array
     aout[..., maskout] = a[..., maskin]
@@ -361,7 +361,7 @@ def fourier_shift(arrayin, shift, qspacein=False, qspaceout=False, pixel_units=T
     real = not np.iscomplexobj(arrayin)
 
     if real:
-        array = np.asarray(arrayin, dtype=np.complex)
+        array = np.asarray(arrayin, dtype=complex)
     else:
         array = arrayin
 

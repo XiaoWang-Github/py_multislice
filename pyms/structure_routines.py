@@ -16,11 +16,11 @@ from .atomic_scattering_params import e_scattering_factors, atomic_symbol
 from .Probe import wavev, relativistic_mass_correction
 from .utils.numpy_utils import bandwidth_limit_array, q_space_array, ensure_array
 from .utils.torch_utils import sinc, torch_c_exp, get_device, cx_from_numpy
-
+from .utils.torch_fft import *
 
 def remove_common_factors(nums):
     """Remove common divisible factors from a set of numbers."""
-    nums = np.asarray(nums, dtype=np.int)
+    nums = np.asarray(nums, dtype=int)
     g_ = np.gcd.reduce(nums)
     while g_ > 1:
         nums //= g_
@@ -150,7 +150,7 @@ def find_equivalent_sites(positions, EPS=1e-3):
 
     # Initialize index of equivalent sites (initially assume all sites are
     # independent)
-    equivalent_sites = np.arange(natoms, dtype=np.int)
+    equivalent_sites = np.arange(natoms, dtype=int)
 
     # Find equivalent sites
     equiv = distance_matrix < EPS
@@ -197,7 +197,7 @@ def change_of_basis(coords, newuc, olduc):
     return np.mod(coords[:, :3] @ olduc @ np.linalg.inv(newuc), 1.0)
 
 
-def rot_matrix(theta, u=np.asarray([0, 0, 1], dtype=np.float)):
+def rot_matrix(theta, u=np.asarray([0, 0, 1], dtype=float)):
     """
     Generate a 3D rotational matrix.
 
@@ -335,7 +335,7 @@ class structure:
             f.readline()
 
             # Get unit cell vector - WARNING assume an orthorhombic unit cell
-            unitcell = np.loadtxt(f, max_rows=3, dtype=np.float)
+            unitcell = np.loadtxt(f, max_rows=3, dtype=float)
 
             # Get the atomic symbol of each element
             atomtypes = np.loadtxt(f, max_rows=1, dtype=str, ndmin=1)  # noqa
@@ -356,7 +356,7 @@ class structure:
             for i in range(totnatoms):
                 atominfo = split(r"\s+", f.readline().strip())[:6]
                 # First three entries are the atomic coordinates
-                atoms[i, :3] = np.asarray(atominfo[:3], dtype=np.float)
+                atoms[i, :3] = np.asarray(atominfo[:3], dtype=float)
                 # Fourth entry is the atomic symbol
                 atoms[i, 3] = atomic_symbol.index(
                     match("([A-Za-z]+)", atominfo[3]).group(0)
@@ -454,7 +454,7 @@ class structure:
     def to_ase_atoms(self):
         """Convert structure to Atomic Simulation Environment (ASE) atoms object."""
         scaled_positions = self.atoms[:, :3]
-        numbers = self.atoms[:, 3].astype(np.int)
+        numbers = self.atoms[:, 3].astype(int)
         cell = self.unitcell
         pbc = [True, True, True]
         return ase.Atoms(
@@ -682,7 +682,7 @@ class structure:
         pixperA = np.asarray(pixels_) / np.asarray(self.unitcell[:2]) / tiling_
 
         # Get a list of unique atomic elements
-        elements = list(set(np.asarray(self.atoms[:, 3], dtype=np.int)))
+        elements = list(set(np.asarray(self.atoms[:, 3], dtype=int)))
 
         # Get number of unique atomic elements
         nelements = len(elements)
@@ -699,7 +699,7 @@ class structure:
         )
 
         # Construct a map of which atom corresponds to which slice
-        islice = np.zeros((self.atoms.shape[0]), dtype=np.int)
+        islice = np.zeros((self.atoms.shape[0]), dtype=int)
         slice_stride = np.prod(pixels_) * 2
         # if nsubslices > 1:
         # Finds which slice atom can be found in
@@ -1054,7 +1054,7 @@ class structure:
         # Make copy of original structure
         # new = copy.deepcopy(self)
 
-        tiling = np.asarray([x, y, z], dtype=np.int)
+        tiling = np.asarray([x, y, z], dtype=int)
 
         # Get atoms in unit cell
         natoms = self.atoms.shape[0]
@@ -1113,7 +1113,7 @@ class structure:
         new = copy.deepcopy(self)
         other_ = copy.deepcopy(other)
 
-        tile1, tile2 = [np.ones(3, dtype=np.int) for i in range(2)]
+        tile1, tile2 = [np.ones(3, dtype=int) for i in range(2)]
 
         # Check if the two slices are the same size and
         # tile accordingly
@@ -1202,7 +1202,7 @@ class structure:
             frac = [frac]
 
         # Work out which atoms will stay in the sliced structure
-        mask = np.ones((self.atoms.shape[0],), dtype=np.bool)
+        mask = np.ones((self.atoms.shape[0],), dtype=bool)
         for a, f in zip(ax, frac):
             atomsin = np.logical_and(self.atoms[:, a] >= f[0], self.atoms[:, a] <= f[1])
             mask = np.logical_and(atomsin, mask)
@@ -1397,7 +1397,7 @@ class layered_structure_transmission_function:
         # with each entry containing the transmission functions for that
         # structure
         if isinstance(islice, int) or np.issubdtype(
-            np.asarray(islice).dtype, np.integer
+            np.asarray(islice).dtype, int
         ):
             T = self.Ts[self.slicemap[islice]][:, self.subslicemap[islice]]
         elif isinstance(islice, slice):
@@ -1409,7 +1409,7 @@ class layered_structure_transmission_function:
         else:
             raise TypeError("Invalid argument type.")
 
-        if isinstance(it, int) or np.issubdtype(np.asarray(it).dtype, np.integer):
+        if isinstance(it, int) or np.issubdtype(np.asarray(it).dtype, int):
             return T[it]
         elif isinstance(it, slice):
             it_ = np.arange(*it.indices(self.nT))
@@ -1484,7 +1484,7 @@ class layered_structure_propagators:
         or torch.Tensor array
         """
         if isinstance(islice, int) or np.issubdtype(
-            np.asarray(islice).dtype, np.integer
+            np.asarray(islice).dtype, int
         ):
             return self.Ps[self.slicemap[islice]][self.subslicemap[islice]]
         elif isinstance(islice, slice):

@@ -28,6 +28,7 @@ from .utils.torch_utils import (
     crop_window_to_periodic_indices,
     crop_torch,
 )
+from .utils.torch_fft import *
 
 
 def tqdm_handler(showProgress):
@@ -248,7 +249,7 @@ def multislice(
 
     # Probe needs to start multislice algorithm in real space
     if qspace_in:
-        psi = torch.ifft(psi, signal_ndim=2)
+        psi = ifft(psi, signal_ndim=2)
 
     slices = generate_slice_indices(nslices, nsubslices, subslicing)
 
@@ -298,8 +299,8 @@ def multislice(
             )
 
             # Apply Fourier shift theorem for sub-pixel shift
-            T_ = torch.ifft(
-                complex_mul(FFT_shift_array, torch.fft(T[it, subslice], signal_ndim=2)),
+            T_ = ifft(
+                complex_mul(FFT_shift_array, fft(T[it, subslice], signal_ndim=2)),
                 signal_ndim=2,
             )
 
@@ -311,8 +312,8 @@ def multislice(
             # probe should start in real space and finish this iteration in
             # real space
             psi = complex_mul(
-                torch.ifft(
-                    complex_mul(torch.fft(psi, signal_ndim=2), P_, reverse),
+                ifft(
+                    complex_mul(fft(psi, signal_ndim=2), P_, reverse),
                     signal_ndim=2,
                 ),
                 T_,
@@ -321,7 +322,7 @@ def multislice(
         else:
             # Standard multislice iteration - probe should start in real space
             # and finish this iteration in reciprocal space
-            psi = complex_mul(torch.fft(complex_mul(psi, T_), signal_ndim=2), P_)
+            psi = complex_mul(fft(complex_mul(psi, T_), signal_ndim=2), P_)
 
         # The probe can be cropped to the bandwidth limit, this removes
         # superfluous array entries in reciprocal space that are zero
@@ -339,10 +340,10 @@ def multislice(
             )
         elif not (transpose or reverse):
             # Inverse Fourier transform back to real space for next iteration
-            psi = torch.ifft(psi, signal_ndim=2)
+            psi = ifft(psi, signal_ndim=2)
 
     if len(slices) < 1 and qspace_out:
-        psi = torch.fft(psi, signal_ndim=2)
+        psi = fft(psi, signal_ndim=2)
 
     if return_numpy:
         return cx_to_numpy(psi)
@@ -909,7 +910,7 @@ def STEM(
     # Assume real space probe is passed in so perform Fourier transform in
     # anticipation of application of Fourier shift theorem
     probe_ = ensure_torch_array(probe, dtype=dtype, device=device)
-    probe_ = torch.fft(probe_, signal_ndim=2)
+    probe_ = fft(probe_, signal_ndim=2)
 
     # Work out whether to perform conventional STEM or not
     conventional_STEM = detectors is not None
@@ -1549,7 +1550,7 @@ class scattering_matrix:
             if self.doPRISM:
                 shape = probes.size()
 
-                probes = torch.ifft(probes, signal_ndim=2).flatten(-3, -2)
+                probes = ifft(probes, signal_ndim=2).flatten(-3, -2)
                 for k in range(nprobes):
 
                     # Calculate windows in vertical and horizontal directions
@@ -1568,7 +1569,7 @@ class scattering_matrix:
                 probes = probes.reshape(shape)
 
                 # Transform probe back to Fourier space
-                return torch.fft(probes, signal_ndim=2)
+                return fft(probes, signal_ndim=2)
 
             return probes
         else:
@@ -1619,7 +1620,7 @@ class scattering_matrix:
                 output.reshape(probes.size(0), *Smat.size()[-3:]), self.stored_gridshape
             )
 
-            return torch.fft(output, signal_ndim=2)
+            return fft(output, signal_ndim=2)
 
     def STEM_with_GPU_streaming(
         self,

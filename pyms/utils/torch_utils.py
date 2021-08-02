@@ -3,6 +3,8 @@ import torch
 import numpy as np
 from itertools import product
 
+from .torch_fft import fft, ifft
+
 
 re = np.s_[..., 0]
 im = np.s_[..., 1]
@@ -253,7 +255,7 @@ def fourier_shift_torch(
         Shift(s) to be applied
     """
     if not qspace_in:
-        array = torch.fft(array, signal_ndim=2)
+        array = fft(array, signal_ndim=2)
 
     array = complex_mul(
         array,
@@ -269,7 +271,7 @@ def fourier_shift_torch(
     if qspace_out:
         return array
 
-    return torch.ifft(array, signal_ndim=2)
+    return ifft(array, signal_ndim=2)
 
 
 def fourier_shift_array(
@@ -533,7 +535,7 @@ def fourier_interpolate_2d_torch(
         ain_ = to_complex(ain)
 
     if not qspace_in:
-        ain_ = torch.fft(ain_, signal_ndim=2)
+        ain_ = fft(ain_, signal_ndim=2)
 
     aout[..., maskout, :] = ain_.flatten(-3, -2)[..., maskin, :]
 
@@ -551,7 +553,7 @@ def fourier_interpolate_2d_torch(
     )
 
     if not qspace_out:
-        aout = torch.ifft(aout, signal_ndim=2)
+        aout = ifft(aout, signal_ndim=2)
 
     # Return correct array data type
     if inputComplex:

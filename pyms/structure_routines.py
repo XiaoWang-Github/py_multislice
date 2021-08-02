@@ -807,7 +807,7 @@ class structure:
         # FFT potential to reciprocal space
         for i in range(P.shape[0]):
             for j in range(P.shape[1]):
-                P[i, j] = torch.fft(P[i, j], signal_ndim=2)
+                P[i, j] = fft(P[i, j], signal_ndim=2)
 
         # Make sinc functions with appropriate singleton dimensions for pytorch
         # broadcasting /gridsize[0]*pixels_[0] /gridsize[1]*pixels_[1]
@@ -842,7 +842,7 @@ class structure:
         P = norm * torch.sum(P, dim=0)
 
         # Only return real part
-        return torch.ifft(P, signal_ndim=2)[..., 0]
+        return ifft(P, signal_ndim=2)[..., 0]
 
     def make_transmission_functions(
         self,
@@ -899,7 +899,7 @@ class structure:
 
         # Now take the complex exponential of the electrostatic potential
         # scaled by the electron interaction constant
-        T = torch.fft(torch_c_exp(interaction_constant(eV) * T), signal_ndim=2)
+        T = fft(torch_c_exp(interaction_constant(eV) * T), signal_ndim=2)
 
         # Band-width limit the transmission function, see Earl Kirkland's book
         # for an discussion of why this is necessary
@@ -907,7 +907,7 @@ class structure:
             T[i] = bandwidth_limit_array(T[i], bandwidth_limit)
 
         if fftout:
-            return torch.ifft(T, signal_ndim=2)
+            return ifft(T, signal_ndim=2)
         return T
 
     def generate_slicing_figure(self, slices, show=True):

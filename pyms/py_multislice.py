@@ -746,7 +746,6 @@ def generate_probe_spread_plot(
 
     ax2 = ax[0, 0].twinx()  # instantiate a second axes that shares the same x-axis
 
-    print(thicknesses.shape, variances.shape)
     ax2.plot(thicknesses, variances, "b-")
     ax2.tick_params(axis="y", labelcolor="b")
     ax2.plot([0, thickness], [0.2, 0.2], "b--")

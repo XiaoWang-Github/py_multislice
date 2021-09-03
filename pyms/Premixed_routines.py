@@ -1304,12 +1304,13 @@ def CBED(
             subslices=subslices,
             tiling=tiling,
             dtype=dtype,
-            nT=nT,
+            nT=1,
             device=device,
             showProgress=showProgress,
             specimen_tilt=specimen_tilt,
             tilt_units=tilt_units,
             seed=seed,
+            displacements=False,
         )
 
     t_ = np.asarray(ensure_array(thicknesses))

@@ -1315,7 +1315,7 @@ def CBED(
 
     t_ = np.asarray(ensure_array(thicknesses))
 
-    output = np.zeros((t_.shape[0], *size_of_bandwidth_limited_array(gridshape)))
+    output = np.zeros((t_.shape[0], *np.asarray(gridshape)))
 
     if nslices is None:
         # Convert thicknesses into number of slices for multislice
@@ -1362,7 +1362,7 @@ def CBED(
                 seed=seed,
             )
 
-            output[it] += np.abs(np.fft.fftshift(crop_to_bandwidth_limit(probe))) ** 2
+            output[it] += np.abs(np.fft.fftshift(probe)) ** 2
 
     # Divide output by # of pixels to compensate for Fourier transform
     return output / np.prod(gridshape)

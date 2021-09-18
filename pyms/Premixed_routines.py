@@ -1368,6 +1368,189 @@ def CBED(
     return output / np.prod(gridshape)
 
 
+def my_testCBED(
+    structure,
+    gridshape,
+    eV,
+    app,
+    thicknesses,
+    subslices=[1.0],
+    device_type=None,
+    dtype=torch.float32,
+    tiling=[1, 1],
+    nT=5,
+    nfph=25,
+    showProgress=True,
+    beam_tilt=[0, 0],
+    specimen_tilt=[0, 0],
+    df=0,
+    tilt_units="mrad",
+    aberrations=[],
+    probe_posn=None,
+    subslicing=False,
+    nslices=None,
+    P=None,
+    T=None,
+    seed=None,
+):
+    """
+    Perform a convergent-beam electron diffraction (CBED) simulation.
+
+    This is the diffraction pattern formed by a focused probe. This can also
+    be used to simulate electron diffraction patterns from a plane wave source
+    if a small enough aperture (app) is selected
+
+    Parameters
+    ----------
+    structure : pyms.structure_routines.structure
+        The structure of interest
+    gridshape : (2,) array_like
+        Pixel size of the simulation grid
+    eV : float
+        Probe energy in electron volts
+    app : float
+        Image-forming lens aperture in mrad, pass None for aperture-less imaging
+    thicknesses : float or array_like
+        Thickness of the object in the calculation, will be rounded off to the
+        nearest unit cell.
+    subslices : array_like, optional
+        A one dimensional array-like object containing the depths (in fractional
+        coordinates) at which the object will be subsliced. The last entry
+        should always be 1.0. For example, to slice the object into four equal
+        sized slices pass [0.25,0.5,0.75,1.0]
+    device_type : torch.device, optional
+        torch.device object which will determine which device (CPU or GPU) the
+        calculations will run on
+    dtype : torch.dtype, optional
+        Datatype of the simulation arrays, by default 32-bit floating point
+    tiling : (2,) array_like, optional
+        Tiling of a repeat unit cell on simulation grid
+    nT : int, optional
+        Number of independent multislice transmission functions generated and
+        then selected from in the frozen phonon algorithm
+    nfph : int, optional
+        Number of iterations of the frozen phonon algorithm (25 by default)
+    showProgress : str or bool, optional
+        Pass False to disable progress readout, pass 'notebook' to get correct
+        progress bar behaviour inside a jupyter notebook
+    beam_tilt : array_like, optional
+        Allows the user to simulate a (small < 50 mrad) beam tilt, To maintain
+        periodicity of the wave function at the boundaries this tilt is rounded
+        to the nearest pixel value.
+    specimen_tilt : array_like, optional
+        Allows the user to simulate a (small < 50 mrad) tilt of the specimen,
+        by shearing the propagator. Units given by input variable tilt_units.
+    df : float, optional
+        Probe defocus in Angstrom
+    tilt_units : string, optional
+        Units of specimen and beam tilt, can be 'mrad','pixels' or 'invA'
+    aberrations : list, optional
+        A list containing a set of the class aberration, pass an empty list for
+        an unaberrated probe.
+    probe_posn : array_like, optional
+        Probe position as a fraction of the unit-cell, by default the probe will
+        be in the upper-left corner of the simulation grid. This is the [0,0]
+        coordinate.
+    subslicing : bool,optional
+        Set to True to allow output at fractions of the unit cell thickness
+    nslices : int or array_like
+        Maximum slice number or set of slices to perform multislice algorithm
+        over.
+    P : (n,Y,X) array_like, optional
+        Precomputed Fresnel free-space propagators
+    T : (n,Y,X) array_like
+        Precomputed transmission functions
+    seed : int
+        Seed for random number generator for generating transmission functions
+        and frozen phonon passes. Useful for testing purposes
+    Returns
+    -------
+    CBED : (len(thicknesses,Y,X)) array_like
+        The requested convergent beam electron diffraction patterns
+    """
+    tdisable, tqdm = tqdm_handler(showProgress)
+    # Choose GPU if available and CPU if not
+    device = get_device(device_type)
+
+    # Make propagators and transmission functions for multslice
+    if P is None and T is None:
+        P, T = multislice_precursor(
+            structure,
+            gridshape,
+            eV,
+            subslices=subslices,
+            tiling=tiling,
+            dtype=dtype,
+            nT=1,   #  need to change back to nT=nT !!!!!!!!!!!!!!!!!!!!
+            device=device,
+            showProgress=showProgress,
+            specimen_tilt=specimen_tilt,
+            tilt_units=tilt_units,
+            seed=seed,
+            displacements = False, #  need to remove this line !!!!!!!!!!
+        )
+
+    t_ = np.asarray(ensure_array(thicknesses))
+
+    output = np.zeros((t_.shape[0], *np.asarray(gridshape)))
+
+
+    if nslices is None:
+        # Convert thicknesses into number of slices for multislice
+        nslices = thickness_to_slices(
+            thicknesses, structure.unitcell[2], subslicing, subslices
+        )
+
+    # Iteration over frozen phonon configurations
+    for _ in tqdm(range(nfph), desc="Frozen phonon iteration", disable=tdisable):
+        # Make probe
+        probe = focused_probe(
+            gridshape,
+            structure.unitcell[:2] * np.asarray(tiling),
+            eV,
+            app,
+            qspace=True,
+            df=df,
+            aberrations=aberrations,
+            beam_tilt=beam_tilt,
+            tilt_units=tilt_units,
+        )
+
+        if not (probe_posn is None):
+            probe = fourier_shift(
+                probe,
+                np.asarray(probe_posn) / np.asarray(tiling),
+                pixel_units=False,
+                qspacein=True,
+                qspaceout=True,
+            )
+
+        probe_location=probe
+        # Run multislice iterating over different thickness outputs
+        for it, t in enumerate(np.diff(nslices, prepend=0)):
+            probe = multislice(
+                probe,
+                t,
+                P,
+                T,
+                tiling=tiling,
+                output_to_bandwidth_limit=False,
+                qspace_in=True,
+                qspace_out=True,
+                device_type=device,
+                seed=seed,
+            )
+
+            output[it] += np.abs(np.fft.fftshift(probe)) ** 2
+
+    # Divide output by # of pixels to compensate for Fourier transform
+    return output / np.prod(gridshape), P, T, probe_location
+
+
+
+
+
+
 def HRTEM(
     structure,
     gridshape,

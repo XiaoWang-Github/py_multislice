@@ -1342,9 +1342,9 @@ def CBED(
             probe = fourier_shift(
                 probe,
                 np.asarray(probe_posn) / np.asarray(tiling),
-                pixel_units=False,
                 qspacein=True,
                 qspaceout=True,
+                pixel_units=True,               
             )
 
         # Run multislice iterating over different thickness outputs
@@ -1494,7 +1494,6 @@ def my_testCBED(
 
     output = np.zeros((t_.shape[0], *np.asarray(gridshape)))
 
-
     if nslices is None:
         # Convert thicknesses into number of slices for multislice
         nslices = thickness_to_slices(
@@ -1503,6 +1502,7 @@ def my_testCBED(
 
     # Iteration over frozen phonon configurations
     for _ in tqdm(range(nfph), desc="Frozen phonon iteration", disable=tdisable):
+
         # Make probe
         probe = focused_probe(
             gridshape,
@@ -1517,12 +1517,13 @@ def my_testCBED(
         )
 
         if not (probe_posn is None):
+
             probe = fourier_shift(
                 probe,
                 np.asarray(probe_posn) / np.asarray(tiling),
-                pixel_units=False,
                 qspacein=True,
                 qspaceout=True,
+                pixel_units=True,               
             )
 
         probe_location=probe

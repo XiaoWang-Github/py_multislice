@@ -1362,10 +1362,10 @@ def CBED(
                 seed=seed,
             )
 
-            output[it] += np.abs(np.fft.fftshift(probe)) ** 2
+            output[it] = probe
 
     # Divide output by # of pixels to compensate for Fourier transform
-    return output / np.prod(gridshape)
+    return output
 
 
 def my_testCBED(
@@ -1542,10 +1542,10 @@ def my_testCBED(
                 seed=seed,
             )
 
-            output[it] += np.abs(np.fft.fftshift(probe)) ** 2
+            output[it] += probe
 
     # Divide output by # of pixels to compensate for Fourier transform
-    return output / np.prod(gridshape), P, T, probe_location
+    return output, P, T, probe_location
 
 
 

@@ -1315,7 +1315,7 @@ def CBED(
 
     t_ = np.asarray(ensure_array(thicknesses))
 
-    output = np.zeros((t_.shape[0], *np.asarray(gridshape)),dtype=np.complex128)
+    output = np.zeros((t_.shape[0], *np.asarray(gridshape)),dtype=np.complex64)
 
     if nslices is None:
         # Convert thicknesses into number of slices for multislice
@@ -1362,7 +1362,7 @@ def CBED(
                 seed=seed,
             )
 
-            output[it] = probe
+            output[it] += probe
 
     # Divide output by # of pixels to compensate for Fourier transform
     return output
@@ -1492,7 +1492,7 @@ def my_testCBED(
 
     t_ = np.asarray(ensure_array(thicknesses))
 
-    output = np.zeros((t_.shape[0], *np.asarray(gridshape)),dtype=np.complex128)
+    output = np.zeros((t_.shape[0], *np.asarray(gridshape)),dtype=np.complex64)
 
     if nslices is None:
         # Convert thicknesses into number of slices for multislice
@@ -1542,7 +1542,7 @@ def my_testCBED(
                 seed=seed,
             )
 
-            output[it] = probe
+            output[it] += probe
 
     # Divide output by # of pixels to compensate for Fourier transform
     return output, P, T, probe_location
